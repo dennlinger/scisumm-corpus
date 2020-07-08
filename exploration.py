@@ -84,9 +84,11 @@ if __name__ == "__main__":
         # replace potential wrong file extension
         xml_filename = citance["Citing Article"].split(".")[0] + ".xml"
         ref_xml = os.path.join(base_path, "Citance_XML", xml_filename)
-        print(ref_xml)
         tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
         root = tree.getroot()
+        if len(citance["Citation Offset"]) > 1:
+            print(ref_xml)
+            print(len(citance["Citation Offset"]), int(citance["Citation Offset"][-1]) - int(citance["Citation Offset"][0]))
 
         el = root.xpath(".//S[@sid='" + citance["Citation Offset"][0] + "']")
 
@@ -98,6 +100,42 @@ if __name__ == "__main__":
         except KeyError:
             for facet in citance["Discourse Facet"]:
                 parent_name.append((parent.tag, facet))
+
+    print(Counter(parent_name).most_common())
+
+    # Do the same but for the reference texts.
+    parent_name = []
+    for citance in citances:
+        base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + citance["Reference Article"].split(".")[0]
+        # replace potential wrong file extension
+        xml_filename = citance["Reference Article"].split(".")[0] + ".xml"
+        ref_xml = os.path.join(base_path, "Reference_XML", xml_filename)
+        print(ref_xml)
+        tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
+        root = tree.getroot()
+
+        prev_offset = -2
+        for offset in citance["Reference Offset"]:
+            # Don't count subsequent offsets, instead go to the next one.
+            if int(offset) - prev_offset == 1:
+                prev_offset = int(offset)
+                continue
+            el = root.xpath(".//S[@sid='" + offset + "']")
+
+            parent = el[0].getparent()
+            try:
+                parent_name.append(parent.attrib["title"].strip(". ").lower())
+            except KeyError:
+                parent_name.append(parent.tag)
+
+            prev_offset = int(offset)
+            # try:
+            #     # parent_name.append(parent.attrib["title"].strip(". ").lower())
+            #     for facet in citance["Discourse Facet"]:
+            #         parent_name.append((parent.attrib["number"], facet))
+            # except KeyError:
+            #     for facet in citance["Discourse Facet"]:
+            #         parent_name.append((parent.tag, facet))
 
     print(Counter(parent_name).most_common())
 
