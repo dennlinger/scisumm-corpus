@@ -39,11 +39,17 @@ def get_citances_for_file(file_id: str, citances_json: List) -> List:
             v = v.strip(" ")
             if k in ("Citation Marker Offset", "Citation Offset", "Reference Offset"):
                 citance_dict[k] = eval(v)
+
+            # Merge Discourse Facets to consistent naming
             elif k == "Discourse Facet":
                 if v.strip(" ")[0] == "[":
-                    citance_dict[k] = eval(v)
+                     temp_facets = eval(v)
                 else:
-                    citance_dict[k] = [v]
+                    temp_facets = [v]
+
+                temp_facets = [facet.lower().replace(" ", "_").replace("result_", "results_") for facet in temp_facets]
+                citance_dict[k] = temp_facets
+
             else:
                 citance_dict[k] = v
 
@@ -72,7 +78,27 @@ if __name__ == "__main__":
 
     print(Counter(facets).most_common())
 
+    parent_name = []
+    for citance in citances:
+        base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + citance["Reference Article"].split(".")[0]
+        # replace potential wrong file extension
+        xml_filename = citance["Citing Article"].split(".")[0] + ".xml"
+        ref_xml = os.path.join(base_path, "Citance_XML", xml_filename)
+        print(ref_xml)
+        tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
+        root = tree.getroot()
 
+        el = root.xpath(".//S[@sid='" + citance["Citation Offset"][0] + "']")
 
+        parent = el[0].getparent()
+        try:
+            # parent_name.append(parent.attrib["title"].strip(". ").lower())
+            for facet in citance["Discourse Facet"]:
+                parent_name.append((parent.attrib["number"], facet))
+        except KeyError:
+            for facet in citance["Discourse Facet"]:
+                parent_name.append((parent.tag, facet))
+
+    print(Counter(parent_name).most_common())
 
 
