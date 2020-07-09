@@ -10,10 +10,6 @@ import os
 
 def get_citances_for_file(file_id: str, citances_json: List) -> List:
     base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + file_id
-    # ref_xml = os.path.join(base_path, "Reference_XML", "C00-2123.xml")
-    # tree = etree.parse(ref_xml)
-    # root = tree.getroot()
-    # print(etree.tostring(root))
 
     try:
         annotations_file = os.path.join(base_path, "annotation", file_id + ".ann.txt")
@@ -110,7 +106,7 @@ if __name__ == "__main__":
         # replace potential wrong file extension
         xml_filename = citance["Reference Article"].split(".")[0] + ".xml"
         ref_xml = os.path.join(base_path, "Reference_XML", xml_filename)
-        print(ref_xml)
+        # print(ref_xml)
         tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
         root = tree.getroot()
 
@@ -124,7 +120,8 @@ if __name__ == "__main__":
 
             parent = el[0].getparent()
             try:
-                parent_name.append(parent.attrib["title"].strip(". ").lower())
+                # parent_name.append(parent.attrib["title"].strip(". ").lower())
+                parent_name.append(parent.attrib["number"])
             except KeyError:
                 parent_name.append(parent.tag)
 
