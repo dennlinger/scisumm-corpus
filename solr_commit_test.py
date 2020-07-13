@@ -1,3 +1,4 @@
+from html import unescape
 from lxml import etree
 from tqdm import tqdm
 import subprocess
@@ -6,30 +7,58 @@ import time
 import os
 import re
 
+
 def get_clean_text(text: str) -> str:
     """
     Preprocessing for query parameters.
     :param text:
     :return:
     """
+
+    ####### Citations #########
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
     clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
 
-    # Remove "Lastname and Lastname (<year>)"
+    # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>),
+    # (Lastname and others <year>)"
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? [A-Z][A-Za-z\-]+,? and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ &amp[;]* [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ and others, \(?[0-9]{4}\)?", "", clean_text)
 
-    # TODO: Evaluate if replacing it with "translated" characters would be better?
-    # Remove HTML special characters
-    clean_text = re.sub(r"\&[a-z]{4};", "", clean_text)
+    # Remove " (Lastname, <year>)"
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
 
-    # Clean up any left over duplicate spaces
-    clean_text = re.sub(r"\s+", " ", clean_text)
+    # Remove "Lastname and Lastname(year)"
+    clean_text = re.sub(r"[A-Z][A-Za-z\-]+,? and [A-Z][A-Za-z\-]+,?\(?[0-9]{4}\)?", "", clean_text)
+
+    # Remove " [number]" for citations
+    clean_text = re.sub(r"\[[0-9]+\]?", "", clean_text)
+
+    ####### Math #########
+    clean_text=clean_text.replace("(e.g.", "example")  # otherwise they will identified as functions
+    # Starting with O() is a complexity
+    clean_text = re.sub(r"O[\s]*\([^\)]+\)", "<COMPLEXITY>", clean_text)
+    # Starting with P or Pr () its a probablity
+    clean_text = re.sub(r"[\s=][Pp][\s]*[r]*[\s]*\([^\)]+\)", " <PROBABILITY>", clean_text)
+    # [numbers] vector
+    clean_text = re.sub(r"\[[^\]]+[,][^\]]+\]", "<VECTOR>", clean_text)
+    # character[=/]() a function
+    clean_text = re.sub(r"[A-Za-z]*[\s]*[=/\d]*[\s]*\([^\)]+[=+][^\)]+\)", "<FUNCTION>", clean_text)
 
     # Remove any non-ascii character from the query, according to
     # https://stackoverflow.com/a/18430817/3607203
     clean_text = clean_text.encode("ascii", errors="ignore").decode()
 
-    # Don't mask the special characters here, since solr will take care of it.
+    # unescape html characters
+    clean_text = unescape(clean_text)
+
+    # remove punctuation
+    clean_text = re.sub(r"[;,#]+", "", clean_text)
+    clean_text = re.sub(r"[\s]\*[\s]", " ", clean_text)
+
+    # Clean up any left over duplicate spaces
+    clean_text = re.sub(r"\s+", " ", clean_text)
 
     return clean_text
 
