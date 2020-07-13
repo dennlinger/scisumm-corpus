@@ -4,6 +4,7 @@ from tqdm import tqdm
 import pysolr
 import re
 import os
+from html import unescape
 
 from exploration import get_citances_for_file
 
@@ -19,10 +20,11 @@ def get_clean_text(text: str) -> str:
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
     clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
 
-    # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>)"
+    # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>), (Lastname and others <year>)"
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? [A-Z][A-Za-z\-]+,? and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ &amp[;]* [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ and others, \(?[0-9]{4}\)?", "", clean_text)
 
     # Remove " (Lastname, <year>)"
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
@@ -50,8 +52,6 @@ def get_clean_text(text: str) -> str:
     # Remove HTML special characters
     clean_text = re.sub(r"\&[a-z]{4};", "", clean_text)
 
-    # Clean up any left over duplicate spaces
-    clean_text = re.sub(r"\s+", " ", clean_text)
 
     # Remove any non-ascii character from the query, according to
     # https://stackoverflow.com/a/18430817/3607203
@@ -59,6 +59,15 @@ def get_clean_text(text: str) -> str:
 
     # Replace any left special characters with escaping
     clean_text = re.sub(r"([\+\-(&&)\|\|!\(\)\{\}\[\]\^\"\~\*\?:\\\/])", r"\\\1", clean_text)
+
+    #unescape html characters
+    clean_text = unescape(clean_text)
+
+    #reamove punctuation
+    clean_text = re.sub(r"[;,#]+", "", clean_text)
+
+    # Clean up any left over duplicate spaces
+    clean_text = re.sub(r"\s+", " ", clean_text)
 
     return clean_text
 
