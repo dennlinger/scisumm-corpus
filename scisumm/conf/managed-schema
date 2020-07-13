@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<schema name="scisumm" version="0.1">
+    <field name="id" type="string"
+    indexed="true" stored="true"
+    multiValued="false" />
+
+    <field name="ssid" type="string"
+    indexed="false" stored="true" multiValued="false"/>
+
+    <field name="reference_section" type="string"
+    indexed="false" stored="true" multiValued="false"/>
+
+    <field name="text" type="managed_en"
+    indexed="true" stored="true" termVectors="true" multiValued="false"/>
+
+    <!-- Required for correct startup -->
+    <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false"/>
+
+
+    <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
+    
+    <uniqueKey>id</uniqueKey>
+
+    <!-- Taken from the tech_samples schema -->
+    <fieldType name="managed_en" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory"
+                ignoreCase="true"
+                words="lang/stopwords_en.txt"
+                />
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
+        <filter class="solr.FlattenGraphFilterFactory"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.StopFilterFactory"
+                ignoreCase="true"
+                words="lang/stopwords_en.txt"
+                />
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+        <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english" />
+      </analyzer>
+    </fieldType>
+</schema>

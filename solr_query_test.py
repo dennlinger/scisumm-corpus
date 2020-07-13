@@ -92,7 +92,7 @@ if __name__ == "__main__":
             cleaned = ""
             for el in texts:
                 print(el)
-                cleaned = get_clean_text(el.text)
+                cleaned += get_clean_text(el.text)
                 print(cleaned+"\n")
 
             res = solr.search(cleaned, fl="id, score", rows=top_k)
