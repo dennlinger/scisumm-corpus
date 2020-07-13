@@ -63,9 +63,13 @@ def get_clean_text(text: str) -> str:
     #unescape html characters
     clean_text = unescape(clean_text)
 
+    #Remove Figure and Tables
+    clean_text = re.sub(r"Figure [\d]", "", clean_text)
+    clean_text = re.sub(r"Tabel [\d]", "", clean_text)
+
     #reamove punctuation
     clean_text = re.sub(r"[;,#]+", "", clean_text)
-    clean_text = re.sub(r"[\s]\*[\s]", " ", clean_text)
+    clean_text = re.sub(r"[\s]\W[\s]", " ", clean_text)
 
     # Clean up any left over duplicate spaces
     clean_text = re.sub(r"\s+", " ", clean_text)
