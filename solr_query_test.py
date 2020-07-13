@@ -43,11 +43,11 @@ def get_clean_text(text: str) -> str:
     #Starting with P or Pr () its a probablity
     clean_text = re.sub(r"[\s=][Pp][\s]*[r]*[\s]*\([^\)]+\)", " <PROBABILITY>", clean_text)
     # [numbers] vector
-    clean_text = re.sub(r"\[[^\]]+\]", "<VECTOR>", clean_text)
+    clean_text = re.sub(r"\[[^\]]+[,][^\]]+\]", "<VECTOR>", clean_text)
     # character[=/]() a function
     clean_text = re.sub(r"[A-Za-z]*[\s]*[=/\d]*[\s]*\([^\)]+[=+][^\)]+\)", "<FUNCTION>", clean_text)
 
-
+    ####### Special Characters #########
     # TODO: Evaluate if replacing it with "translated" characters would be better?
     # Remove HTML special characters
     clean_text = re.sub(r"\&[a-z]{4};", "", clean_text)
@@ -65,6 +65,7 @@ def get_clean_text(text: str) -> str:
 
     #reamove punctuation
     clean_text = re.sub(r"[;,#]+", "", clean_text)
+    clean_text = re.sub(r"[\s]\*[\s]", " ", clean_text)
 
     # Clean up any left over duplicate spaces
     clean_text = re.sub(r"\s+", " ", clean_text)
