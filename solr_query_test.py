@@ -14,11 +14,37 @@ def get_clean_text(text: str) -> str:
     :param text:
     :return:
     """
+
+    ####### Citations #########
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
     clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
 
-    # Remove "Lastname and Lastname (<year>)"
+    # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>)"
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? [A-Z][A-Za-z\-]+,? and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
     clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ and [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+ &amp[;]* [A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+
+    # Remove " (Lastname, <year>)"
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", clean_text)
+
+    #Remove "Lastname and Lastname(year)"
+    clean_text = re.sub(r"[A-Z][A-Za-z\-]+,? and [A-Z][A-Za-z\-]+,?\(?[0-9]{4}\)?", "", clean_text)
+
+
+    # Remove " [number]" for citations
+    clean_text = re.sub(r"\[[0-9]+\]?", "", clean_text)
+
+    ####### Math #########
+    clean_text=clean_text.replace("(e.g.", "example")#otherwise they will identified as functions
+    #Starting with O() is a complexity
+    clean_text = re.sub(r"O[\s]*\([^\)]+\)", "<COMPLEXITY>", clean_text)
+    #Starting with P or Pr () its a probablity
+    clean_text = re.sub(r"[\s=][Pp][\s]*[r]*[\s]*\([^\)]+\)", " <PROBABILITY>", clean_text)
+    # [numbers] vector
+    clean_text = re.sub(r"\[[^\]]+\]", "<VECTOR>", clean_text)
+    # character[=/]() a function
+    clean_text = re.sub(r"[A-Za-z]*[\s]*[=/\d]*[\s]*\([^\)]+[=+][^\)]+\)", "<FUNCTION>", clean_text)
+
 
     # TODO: Evaluate if replacing it with "translated" characters would be better?
     # Remove HTML special characters
@@ -36,6 +62,11 @@ def get_clean_text(text: str) -> str:
 
     return clean_text
 
+def additional_cleaning(text: str) -> str:
+    # Remove " (Lastname, <year>)"
+    clean_text = re.sub(r"\(?[A-Z][A-Za-z\-]+,? \(?[0-9]{4}\)?", "", text)
+
+    return clean_text
 
 if __name__ == "__main__":
     top_k = 5
@@ -57,11 +88,12 @@ if __name__ == "__main__":
             texts = soup.findAll()
             clean_text = ""
             for el in texts:
+                print(el)
                 clean_text = get_clean_text(el.text)
-                # print(clean_text)
+                print(clean_text+"\n")
 
             res = solr.search(clean_text, fl="id, score", rows=top_k)
-            print(res.docs, len(truth))
+            # print(res.docs, len(truth))
             for doc in res.docs:
                 results[doc["id"]] += doc["score"]
 
