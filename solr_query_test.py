@@ -67,12 +67,11 @@ def get_clean_text(text: str) -> str:
 
     # Replace any left special characters with escaping
     clean_text = re.sub(r"([\+\-&{2}\|{2}\!\(\)\{\}\[\]\^\"\~\*\?:\\\/])", r"\\\1", clean_text)
-
     return clean_text
 
 
 if __name__ == "__main__":
-    top_k = 10
+    top_k = 5
     tp = 0
     exact_tp = 0
     overall = 0
