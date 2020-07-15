@@ -98,7 +98,7 @@ def get_clean_text(text: str) -> str:
 
 
 if __name__ == "__main__":
-    top_k = 10
+    top_k = 5
     tp = 0
     exact_tp = 0
     overall = 0
@@ -136,7 +136,9 @@ if __name__ == "__main__":
             for doc in res.docs:
                 results[doc["id"]] += doc["score"]
 
-            write_results(satya_input_query, res, filename, truth)
+            # TODO: Only write with new results!!
+            # write_results(satya_input_query, res, filename, truth)
+
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
             # Calculate coverage of current top k results

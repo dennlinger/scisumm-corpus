@@ -97,7 +97,8 @@ if __name__ == "__main__":
         sentences = tree.xpath(".//S")
 
         values = []
-
+        committed = False
+        auxil_offset = -1
         for sentence in sentences:
             try:
                 ssid = sentence.attrib["ssid"]
@@ -112,13 +113,28 @@ if __name__ == "__main__":
 
             # clean_text = re.sub(r"\+-(&&)\|\|!\(\)\{\}\[\]\^\"~\*\?:\\/", "", sentence.text)
             clean_text = get_clean_text(sentence.text)
-
+            if sentence.attrib["sid"] == "":
+                sid = str(auxil_offset)
+                auxil_offset -= 1
+            else:
+                sid = sentence.attrib["sid"]
+            fraction_sid = max(0, int(sid))
+            fraction = fraction_sid / len(sentences)
             values.append({
-                    "id": sentence.attrib["sid"],
+                    "id": sid,
                     "ssid": ssid,
                     "reference_section": reference_section,
                     "text": clean_text,
-                    "text2": clean_text
+                    # "text2": clean_text,
+                    # "text3": clean_text,
+                    # "text4": clean_text,
+                    # "text5": clean_text,
                 })
 
+            # Give the first 30% of the document a significant boost
+            if fraction >= 0.3 and not committed:
+                solr.add(values, boost={"text": 1.25})
+                values = []
+                committed = True  # So it doesn't happen every round from now on.
+        # Remaining values are not boosted
         solr.add(values)
