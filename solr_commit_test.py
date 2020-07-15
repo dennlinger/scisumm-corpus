@@ -55,7 +55,7 @@ def get_clean_text(text: str) -> str:
 
     # remove punctuation
     clean_text = re.sub(r"[;,#]+", "", clean_text)
-    clean_text = re.sub(r"[\s]\*[\s]", " ", clean_text)
+    clean_text = re.sub(r"[\s]\W[\s]", " ", clean_text)
 
     # Clean up any left over duplicate spaces
     clean_text = re.sub(r"\s+", " ", clean_text)
@@ -117,7 +117,8 @@ if __name__ == "__main__":
                     "id": sentence.attrib["sid"],
                     "ssid": ssid,
                     "reference_section": reference_section,
-                    "text": clean_text
+                    "text": clean_text,
+                    "text2": clean_text
                 })
 
         solr.add(values)
