@@ -1,12 +1,39 @@
 from collections import defaultdict
 from bs4 import BeautifulSoup
+from lxml import etree
 from tqdm import tqdm
+import numpy as np
 import pysolr
 import re
 import os
 from html import unescape
 
 from exploration import get_citances_for_file
+
+
+def write_results(query, results, fn, truth):
+    base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + fn
+    # replace potential wrong file extension
+    xml_filename = fn + ".xml"
+    ref_xml = os.path.join(base_path, "Reference_XML", xml_filename)
+    tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
+    relevant = ""
+    irrelevant = ""
+    for result in results.docs:
+        ref = tree.xpath(".//S[@sid='" + result["id"] + "']")
+        if ref:
+            ref = ref[0].text
+            # Formatting has to be relevant first, then irrelevant.
+            if result["id"] in truth:
+                relevant += query + "\t" + ref + "\t" + "1\n"
+            else:
+                irrelevant += query + "\t" + ref + "\t" + "0\n"
+        else:
+            raise ValueError(f"No results for {result['id']} in {fn}.")
+
+    with open("satya_input.tsv", "a") as f:
+        f.write(relevant)
+        f.write(irrelevant)
 
 
 def get_clean_text(text: str) -> str:
@@ -71,10 +98,16 @@ def get_clean_text(text: str) -> str:
 
 
 if __name__ == "__main__":
-    top_k = 5
+    top_k = 10
     tp = 0
     exact_tp = 0
     overall = 0
+
+    np.random.seed(50)
+
+    tp_random = 0
+    exact_tp_random = 0
+
     for filename in tqdm(sorted(os.listdir("./data/Training-Set-2019/Task1/From-Training-Set-2018/"))):
         solr = pysolr.Solr('http://localhost:8983/solr/' + filename + '/', always_commit=True)
 
@@ -89,24 +122,34 @@ if __name__ == "__main__":
             truth = set(citance["Reference Offset"])
             texts = soup.findAll()
             cleaned = ""
+            satya_input_query = ""
+            # Add text together from different citation sentences.
+            # Results show that a big single query performs better.
             for el in texts:
                 print(el)
                 cleaned += get_clean_text(el.text)
+                satya_input_query += el.text
                 print(cleaned+"\n")
 
-            res = solr.search(cleaned, fl="id, score", rows=top_k)
-            # print(res.docs, len(truth))
+            # This is mostly relevant if scores from multiple queries would be combined.
+            res = solr.search(cleaned, df="text", fl="id, score", rows=top_k)
             for doc in res.docs:
                 results[doc["id"]] += doc["score"]
 
-            # print(results)
-            # print(truth)
+            write_results(satya_input_query, res, filename, truth)
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
             # Calculate coverage of current top k results
             tp += len(set(results.keys()).intersection(truth))
             exact_tp += len(set(list(results.keys())[:len(truth)]).intersection(truth))
 
+            # Random baseline part.
+            res = solr.search("*:*", setRows=0)
+            randoms = np.random.choice(res.hits, top_k, replace=False)
+            tp_random += len(set(randoms).intersection(truth))
+            exact_tp_random += len(set(list(randoms)[:len(truth)]).intersection(truth))
+
     print(f"Recall @ {top_k} for the whole dataset: {tp / overall:.4f}")
     print(f"Precision for the whole dataset: {exact_tp / overall:.4f}")
+    print(f"Random Baseline Recall @ {top_k}: {tp_random / overall:.4f}")
 
