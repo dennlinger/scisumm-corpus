@@ -26,7 +26,7 @@ if __name__ == "__main__":
             for pos in truth:
                 positions.append(int(pos) / len(sentences))
 
-    y, x = np.histogram(positions, bins=4, range=(0, 1))
+    y, x = np.histogram(positions, bins=10, range=(0, 1))
     x = x[:-1] + 0.05
     plt.bar(x, y, width=0.1)
     plt.show()

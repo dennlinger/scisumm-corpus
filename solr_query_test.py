@@ -132,7 +132,8 @@ if __name__ == "__main__":
                 print(cleaned+"\n")
 
             # This is mostly relevant if scores from multiple queries would be combined.
-            res = solr.search(cleaned, df="text", fl="id, score", rows=top_k)
+            res = solr.search(cleaned, df="text", fl="id, score", rows=top_k,
+                              bf="position_boost", defType="edismax")
             for doc in res.docs:
                 results[doc["id"]] += doc["score"]
 

@@ -65,6 +65,9 @@ def get_clean_text(text: str) -> str:
 
 if __name__ == "__main__":
 
+    boost_value = 1.5
+    threshold = 0.3
+
     # Clean indexes
     for filename in tqdm(sorted(os.listdir("./data/Training-Set-2019/Task1/From-Training-Set-2018/"))):
         subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "delete", "-c", filename])
@@ -97,7 +100,6 @@ if __name__ == "__main__":
         sentences = tree.xpath(".//S")
 
         values = []
-        committed = False
         auxil_offset = -1
         for sentence in sentences:
             try:
@@ -120,21 +122,20 @@ if __name__ == "__main__":
                 sid = sentence.attrib["sid"]
             fraction_sid = max(0, int(sid))
             fraction = fraction_sid / len(sentences)
+            # Boost queries in the beginning
+            fraction_boost = boost_value if fraction < threshold else 1.0
+            # fraction_boost = boost_value - fraction
             values.append({
                     "id": sid,
                     "ssid": ssid,
                     "reference_section": reference_section,
                     "text": clean_text,
+                    "position_boost": fraction_boost,
                     # "text2": clean_text,
                     # "text3": clean_text,
                     # "text4": clean_text,
                     # "text5": clean_text,
                 })
 
-            # Give the first 30% of the document a significant boost
-            if fraction >= 0.3 and not committed:
-                solr.add(values, boost={"text": 1.25})
-                values = []
-                committed = True  # So it doesn't happen every round from now on.
-        # Remaining values are not boosted
+        # Index after processing all of the document
         solr.add(values)

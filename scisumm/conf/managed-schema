@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <schema name="scisumm" version="0.1">
-    <field name="id" type="string"
-    indexed="true" stored="true"
-    multiValued="false" />
+    <field name="id" type="string" indexed="true" stored="true" multiValued="false" />
 
-    <field name="ssid" type="string"
-    indexed="false" stored="true" multiValued="false"/>
+    <field name="ssid" type="string" indexed="false" stored="true" multiValued="false "/>
 
-    <field name="reference_section" type="string"
-    indexed="false" stored="true" multiValued="false"/>
+    <field name="reference_section" type="string" indexed="false" stored="true" multiValued="false "/>
+    <field name="position_boost" type="pfloat" indexed="false" stored="true" multiValued="false" />
 
-    <field name="text" type="managed_en" indexed="true" stored="true" termVectors="true" multiValued="false"/>
+    <field name="text" type="managed_en" indexed="true" stored="true" termVectors="true" multiValued="false" />
 <!--     <field name="text2" type="text_en_splitting" indexed="true" stored="true" termVectors="true" multiValued="false"/>
     <field name="text3" type="managed_en_DFRS" indexed="true" stored="true" termVectors="true" multiValued="false"/>
     <field name="text4" type="managed_en_IBS" indexed="true" stored="true" termVectors="true" multiValued="false"/>
@@ -22,6 +19,7 @@
 
 
     <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
+    <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
     
     <uniqueKey>id</uniqueKey>
