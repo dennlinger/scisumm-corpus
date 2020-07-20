@@ -15,7 +15,7 @@ def get_clean_text(text: str) -> str:
     :return:
     """
 
-    ####### Citations #########
+    ######## Citations #########
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
     clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
 
@@ -35,8 +35,9 @@ def get_clean_text(text: str) -> str:
     # Remove " [number]" for citations
     clean_text = re.sub(r"\[[0-9]+\]?", "", clean_text)
 
+    clean_text = text
     ####### Math #########
-    clean_text=clean_text.replace("(e.g.", "example")  # otherwise they will identified as functions
+    clean_text = clean_text.replace("(e.g.", "example")  # otherwise they will identified as functions
     # Starting with O() is a complexity
     clean_text = re.sub(r"O[\s]*\([^\)]+\)", "<COMPLEXITY>", clean_text)
     # Starting with P or Pr () its a probablity
@@ -131,10 +132,10 @@ if __name__ == "__main__":
                     "reference_section": reference_section,
                     "text": clean_text,
                     "position_boost": fraction_boost,
-                    # "text2": clean_text,
-                    # "text3": clean_text,
-                    # "text4": clean_text,
-                    # "text5": clean_text,
+                    "text2": clean_text,
+                    "text3": clean_text,
+                    "text4": clean_text,
+                    "text5": clean_text,
                 })
 
         # Index after processing all of the document

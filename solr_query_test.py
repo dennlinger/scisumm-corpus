@@ -36,6 +36,33 @@ def write_results(query, results, fn, truth):
         f.write(irrelevant)
 
 
+def get_top_k_by_weight(d, k):
+    """
+    Dictionary with value: weight pairs, get the top k values from it by weight.
+    :param d:
+    :return:
+    """
+    sorted_dict = sorted(d.items(), key=lambda item: item[1], reverse=True)
+    keys = [el[0] for el in sorted_dict[:k]]
+    return keys
+
+
+def get_intersection(res1, res2):
+    intermediate_res = {}
+    for doc in res1.docs:
+        intermediate_res[doc['id']] = doc['score']
+
+    res = {}
+    for doc in res2.docs:
+        if doc['id'] in intermediate_res.keys():
+            res[doc['id']] = intermediate_res[doc['id']] + doc['score']
+
+    keys = get_top_k_by_weight(res, len(res))
+
+    return keys
+
+
+
 def get_clean_text(text: str) -> str:
     """
     Preprocessing for query parameters.
@@ -102,6 +129,9 @@ if __name__ == "__main__":
     tp = 0
     exact_tp = 0
     overall = 0
+    num_samples = 0
+    intersect_tp = 0
+    retrieved = 0
 
     np.random.seed(50)
 
@@ -132,27 +162,68 @@ if __name__ == "__main__":
                 print(cleaned+"\n")
 
             # This is mostly relevant if scores from multiple queries would be combined.
-            res = solr.search(cleaned, df="text", fl="id, score", rows=top_k,
+            res1 = solr.search(cleaned, df="text", fl="id, score", rows=top_k,
                               bf="position_boost", defType="edismax")
-            for doc in res.docs:
+            for doc in res1.docs:
                 results[doc["id"]] += doc["score"]
+
+            res2 = solr.search(cleaned, df="text2", fl="id, score", rows=top_k,
+                              bf="position_boost", defType="edismax")
+            for doc in res2.docs:
+                results[doc["id"]] += doc["score"]
+
+            intersection = get_intersection(res1, res2)
+
+            # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,)
+            #                   # bf="position_boost", defType="edismax")
+            # for doc in res3.docs:
+            #     results[doc["id"]] += doc["score"]
+            #
+            # res4 = solr.search(cleaned, df="text4", fl="id, score", rows=top_k,
+            #                   bf="position_boost", defType="edismax")
+            # for doc in res4.docs:
+            #     results[doc["id"]] += doc["score"]
+            #
+            # res5 = solr.search(cleaned, df="text5", fl="id, score", rows=top_k,
+            #                   bf="position_boost", defType="edismax")
+            # for doc in res5.docs:
+            #     results[doc["id"]] += doc["score"]
 
             # TODO: Only write with new results!!
             # write_results(satya_input_query, res, filename, truth)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
+            num_samples += 1
             # Calculate coverage of current top k results
-            tp += len(set(results.keys()).intersection(truth))
-            exact_tp += len(set(list(results.keys())[:len(truth)]).intersection(truth))
+            top_k_results = get_top_k_by_weight(results, top_k)
+            tp += len(set(top_k_results).intersection(truth))
+            intersect_tp += len(set(intersection).intersection(truth))
+            retrieved += len(intersection)
+            exact_tp += len(set(top_k_results[:len(truth)]).intersection(truth))
 
             # Random baseline part.
-            res = solr.search("*:*", setRows=0)
-            randoms = np.random.choice(res.hits, top_k, replace=False)
+            res_random = solr.search("*:*", setRows=0)
+            randoms = np.random.choice(res_random.hits, top_k, replace=False)
             tp_random += len(set(randoms).intersection(truth))
             exact_tp_random += len(set(list(randoms)[:len(truth)]).intersection(truth))
 
     print(f"Recall @ {top_k} for the whole dataset: {tp / overall:.4f}")
-    print(f"Precision for the whole dataset: {exact_tp / overall:.4f}")
+    print(f"True positives assuming perfect knowledge about number of relevant: {exact_tp / overall:.4f}")
     print(f"Random Baseline Recall @ {top_k}: {tp_random / overall:.4f}")
 
+    print(f"Relevant documents: {overall}")
+    print(f"Retrieved documents: {top_k * num_samples}")
+    print(f"---------------------------------------")
+    precision = tp / (top_k * num_samples)
+    print(f"Precision: {precision:.4f}")
+    recall = tp / overall
+    print(f"Recall: {recall:.4f}")
+    print(f"F1 overlap: {2 * (precision * recall) / (precision + recall):.4f}")
+
+    print(f"---------------------------------------")
+    precision2 = intersect_tp / retrieved
+    print(f"Precision for intersection: {precision2:.4f}")
+    recall2 = intersect_tp / overall
+    print(f"Recall: {recall2:.4f}")
+    print(f"F1 overlap: {2 * (precision2 * recall2) / (precision2 + recall2):.4f}")
