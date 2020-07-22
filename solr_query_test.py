@@ -11,27 +11,69 @@ from html import unescape
 from exploration import get_citances_for_file
 
 
-def write_results(query, results, fn, truth):
-    base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + fn
+def write_results(query, results, fn, truth, folder="./data/Training-Set-2019/Task1/From-Training-Set-2018/"):
+    """
+    Writes out the results from a query into a file for reranking training
+    """
+    base_path = folder + fn
     # replace potential wrong file extension
     xml_filename = fn + ".xml"
     ref_xml = os.path.join(base_path, "Reference_XML", xml_filename)
     tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
     relevant = ""
     irrelevant = ""
-    for result in results.docs:
-        ref = tree.xpath(".//S[@sid='" + result["id"] + "']")
+    for result in results:
+        ref = tree.xpath(".//S[@sid='" + result + "']")
         if ref:
             ref = ref[0].text
             # Formatting has to be relevant first, then irrelevant.
-            if result["id"] in truth:
+            if result in truth:
                 relevant += query + "\t" + ref + "\t" + "1\n"
             else:
                 irrelevant += query + "\t" + ref + "\t" + "0\n"
         else:
-            raise ValueError(f"No results for {result['id']} in {fn}.")
+            raise ValueError(f"No results for {result} in {fn}.")
 
-    with open("satya_input.tsv", "a") as f:
+    with open("satya_input_search_only.tsv", "a") as f:
+        f.write(relevant)
+        f.write(irrelevant)
+
+
+def write_with_truth_results(query, results, fn, truth, folder="./data/Training-Set-2019/Task1/From-Training-Set-2018/"):
+    """
+    Instead of the above function, always includes *all* true positive samples as well.
+    """
+    base_path = folder + fn
+    # replace potential wrong file extension
+    xml_filename = fn + ".xml"
+    ref_xml = os.path.join(base_path, "Reference_XML", xml_filename)
+    tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
+    relevant = ""
+    irrelevant = ""
+    counter = 0
+    # Manually write out relevant ones
+    for result in truth:
+        counter += 1
+        ref = tree.xpath(".//S[@sid='" + result + "']")
+        ref = ref[0].text
+        relevant += query + "\t" + ref + "\t" + "1\n"
+    for result in results:
+        # Make sure to cancel after a certain number of results has been reached.
+        if counter >= 10:
+            break
+        ref = tree.xpath(".//S[@sid='" + result + "']")
+        if ref:
+            ref = ref[0].text
+            # Formatting has to be relevant first, then irrelevant.
+            if result in truth:
+                continue
+            else:
+                irrelevant += query + "\t" + ref + "\t" + "0\n"
+                counter += 1
+        else:
+            raise ValueError(f"No results for {result} in {fn}.")
+
+    with open("satya_input_with_truth.tsv", "a") as f:
         f.write(relevant)
         f.write(irrelevant)
 
@@ -62,17 +104,16 @@ def get_intersection(res1, res2):
     return keys
 
 
-
 def get_clean_text(text: str) -> str:
     """
-    Preprocessing for query parameters.
-    :param text:
-    :return:
+    Preprocessing for query string.
+    :param text: Raw input text
+    :return: Formulated (and escaped) query
     """
 
     ####### Citations #########
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
-    clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
+    clean_text = re.sub(r"\(?([A-Za-z]+) et al.(,? \(?[0-9]{4}\)?)?", "", text)
 
     # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>),
     # (Lastname and others <year>)"
@@ -116,6 +157,9 @@ def get_clean_text(text: str) -> str:
     clean_text = re.sub(r"[;,#]+", "", clean_text)
     clean_text = re.sub(r"[\s]\W[\s]", " ", clean_text)
 
+    # Remove empty brackets
+    clean_text = re.sub(r"(\[\]|\(\)|\{\})", "", clean_text)
+
     # Clean up any left over duplicate spaces
     clean_text = re.sub(r"\s+", " ", clean_text)
 
@@ -125,7 +169,7 @@ def get_clean_text(text: str) -> str:
 
 
 if __name__ == "__main__":
-    top_k = 5
+    top_k = 10
     tp = 0
     exact_tp = 0
     overall = 0
@@ -138,14 +182,18 @@ if __name__ == "__main__":
     tp_random = 0
     exact_tp_random = 0
 
-    for filename in tqdm(sorted(os.listdir("./data/Training-Set-2019/Task1/From-Training-Set-2018/"))):
+    invalid_queries = 0
+
+    # folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
+    folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
+    for filename in tqdm(sorted(os.listdir(folder))):
         solr = pysolr.Solr('http://localhost:8983/solr/' + filename + '/', always_commit=True)
 
         solr.ping()
 
-        citances = get_citances_for_file(filename, list())
+        citances = get_citances_for_file(filename, list(), folder)
 
-        for citance in citances:
+        for i, citance in enumerate(citances):
             results = defaultdict(float)
             all_query_sentences = citance["Citation Text"]
             soup = BeautifulSoup(all_query_sentences, "html.parser")
@@ -161,6 +209,10 @@ if __name__ == "__main__":
                 satya_input_query += el.text
                 print(cleaned+"\n")
 
+            # For empty queries, skip results...
+            if not cleaned:
+                invalid_queries += 1
+                continue
             # This is mostly relevant if scores from multiple queries would be combined.
             res1 = solr.search(cleaned, df="text", fl="id, score", rows=top_k,
                               bf="position_boost", defType="edismax")
@@ -173,6 +225,7 @@ if __name__ == "__main__":
                 results[doc["id"]] += doc["score"]
 
             intersection = get_intersection(res1, res2)
+
 
             # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,)
             #                   # bf="position_boost", defType="edismax")
@@ -190,7 +243,10 @@ if __name__ == "__main__":
             #     results[doc["id"]] += doc["score"]
 
             # TODO: Only write with new results!!
-            # write_results(satya_input_query, res, filename, truth)
+
+            res = get_top_k_by_weight(results, top_k)
+            write_results(satya_input_query, res, filename, truth, folder)
+            # write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
@@ -202,15 +258,15 @@ if __name__ == "__main__":
             retrieved += len(intersection)
             exact_tp += len(set(top_k_results[:len(truth)]).intersection(truth))
 
-            # Random baseline part.
-            res_random = solr.search("*:*", setRows=0)
-            randoms = np.random.choice(res_random.hits, top_k, replace=False)
-            tp_random += len(set(randoms).intersection(truth))
-            exact_tp_random += len(set(list(randoms)[:len(truth)]).intersection(truth))
+            # # Random baseline part.
+            # res_random = solr.search("*:*", setRows=0)
+            # randoms = np.random.choice(res_random.hits, top_k, replace=False)
+            # tp_random += len(set(randoms).intersection(truth))
+            # exact_tp_random += len(set(list(randoms)[:len(truth)]).intersection(truth))
 
     print(f"Recall @ {top_k} for the whole dataset: {tp / overall:.4f}")
     print(f"True positives assuming perfect knowledge about number of relevant: {exact_tp / overall:.4f}")
-    print(f"Random Baseline Recall @ {top_k}: {tp_random / overall:.4f}")
+    # print(f"Random Baseline Recall @ {top_k}: {tp_random / overall:.4f}")
 
     print(f"Relevant documents: {overall}")
     print(f"Retrieved documents: {top_k * num_samples}")

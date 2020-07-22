@@ -17,7 +17,7 @@ def get_clean_text(text: str) -> str:
 
     ######## Citations #########
     # Remove Lastname et al. \ Keep group to potentially keep their name only.
-    clean_text = re.sub(r"\(?([A-Za-z]+) et al.(, \(?[0-9]{4}\)?)?", "", text)
+    clean_text = re.sub(r"\(?([A-Za-z]+) et al.(,? \(?[0-9]{4}\)?)?", "", text)
 
     # Remove "Lastname and Lastname (<year>)","Lastname & Lastname (<year>), "Lastname, Lastname and Lastname (<year>),
     # (Lastname and others <year>)"
@@ -66,16 +66,18 @@ def get_clean_text(text: str) -> str:
 
 if __name__ == "__main__":
 
+    folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
+    # folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
     boost_value = 1.5
     threshold = 0.3
 
     # Clean indexes
-    for filename in tqdm(sorted(os.listdir("./data/Training-Set-2019/Task1/From-Training-Set-2018/"))):
-        subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "delete", "-c", filename])
-    subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "restart"])
-    time.sleep(5)  # Give time to restart, although above runs already until restart time.
+    # for filename in tqdm(sorted(os.listdir(folder))):
+    #     subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "delete", "-c", filename])
+    # subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "restart", "-m", "4g"])
+    # time.sleep(15)  # Give time to restart, although above runs already until restart time.
 
-    for filename in tqdm(sorted(os.listdir("./data/Training-Set-2019/Task1/From-Training-Set-2018/"))):
+    for filename in tqdm(sorted(os.listdir(folder))):
 
         subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "create_core", "-c", filename, "-d",
                          "/home/dennis/solr-8.5.2/server/solr/configsets/scisumm/"])
@@ -93,7 +95,7 @@ if __name__ == "__main__":
         #     },
         # ])
 
-        base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + filename
+        base_path = folder + filename
         ref_xml = os.path.join(base_path, "Reference_XML", filename + ".xml")
         tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
         root = tree.getroot()
@@ -101,6 +103,7 @@ if __name__ == "__main__":
         sentences = tree.xpath(".//S")
 
         values = []
+        empty_sentences = 0
         auxil_offset = -1
         for sentence in sentences:
             try:
@@ -115,6 +118,9 @@ if __name__ == "__main__":
                 reference_section = sentence.getparent().tag
 
             # clean_text = re.sub(r"\+-(&&)\|\|!\(\)\{\}\[\]\^\"~\*\?:\\/", "", sentence.text)
+            if not sentence.text:
+                empty_sentences += 1
+                continue
             clean_text = get_clean_text(sentence.text)
             if sentence.attrib["sid"] == "":
                 sid = str(auxil_offset)
@@ -138,5 +144,9 @@ if __name__ == "__main__":
                     "text5": clean_text,
                 })
 
+        if empty_sentences / len(sentences) > 0.15:
+            print(f"{filename} contained incomplete sentences!")
+            continue  # So as to not add any values!
         # Index after processing all of the document
         solr.add(values)
+

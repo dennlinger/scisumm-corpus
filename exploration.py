@@ -8,8 +8,9 @@ from lxml import etree
 import os
 
 
-def get_citances_for_file(file_id: str, citances_json: List) -> List:
-    base_path = "./data/Training-Set-2019/Task1/From-Training-Set-2018/" + file_id
+def get_citances_for_file(file_id: str, citances_json: List,
+                          folder: str="./data/Training-Set-2019/Task1/From-Training-Set-2018/") -> List:
+    base_path = folder + file_id
 
     try:
         annotations_file = os.path.join(base_path, "annotation", file_id + ".ann.txt")
@@ -25,21 +26,33 @@ def get_citances_for_file(file_id: str, citances_json: List) -> List:
         if line.strip():
             citances.append(line.strip("\n |").split(" | "))
 
-    for citance in citances:
+    for i, citance in enumerate(citances):
         citance_dict = {}
 
+        # print(i+1)
+
         for el in citance:
+            # print(el)
             # Only split at first colon, since text may contain more.
-            k, v = el.split(":", maxsplit=1)
+            try:
+                k, v = el.split(":", maxsplit=1)
+            except ValueError:
+                continue
             k = k.strip(" ")
             v = v.strip(" ")
             if k in ("Citation Marker Offset", "Citation Offset", "Reference Offset"):
-                citance_dict[k] = eval(v)
+                try:
+                    citance_dict[k] = eval(v)
+                except NameError:
+                    citance_dict[k] = "undefined"
 
             # Merge Discourse Facets to consistent naming
             elif k == "Discourse Facet":
                 if v.strip(" ")[0] == "[":
-                     temp_facets = eval(v)
+                    try:
+                        temp_facets = eval(v)
+                    except NameError:
+                        temp_facets = "undefined"
                 else:
                     temp_facets = [v]
 
