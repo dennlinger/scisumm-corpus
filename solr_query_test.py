@@ -183,9 +183,12 @@ if __name__ == "__main__":
     exact_tp_random = 0
 
     invalid_queries = 0
-
+    # This is the validation set used by the UoM team (winner 2019)
+    # valid = ["C00-2123", "C04-1089", "I05-5011", "J96-3004", "N06-2049", "P05-1004", "P05-1053", "P98-1046"]
+    # Enable either ScisummNet or regular training data
     # folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
     folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
+    # for filename in tqdm(valid):  # Used for the validation runs with the UoM data
     for filename in tqdm(sorted(os.listdir(folder))):
         solr = pysolr.Solr('http://localhost:8983/solr/' + filename + '/', always_commit=True)
 
@@ -246,7 +249,7 @@ if __name__ == "__main__":
 
             res = get_top_k_by_weight(results, top_k)
             write_results(satya_input_query, res, filename, truth, folder)
-            # write_with_truth_results(satya_input_query, res, filename, truth, folder)
+            write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
