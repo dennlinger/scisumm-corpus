@@ -22,15 +22,22 @@ def write_results(query, results, fn, truth, folder="./data/Training-Set-2019/Ta
     tree = etree.parse(ref_xml, parser=etree.XMLParser(encoding='ISO-8859-1', recover=True))
     relevant = ""
     irrelevant = ""
+    query = query.replace("\n", "").replace("\t", "")
+    counter = 0
     for result in results:
+        if counter == 10:
+            break
+        elif counter > 10:
+            raise ValueError("Problem encountered in other writing")
         ref = tree.xpath(".//S[@sid='" + result + "']")
         if ref:
-            ref = ref[0].text
+            ref = ref[0].text.replace("\n", "").replace("\t", "")
             # Formatting has to be relevant first, then irrelevant.
             if result in truth:
-                relevant += query + "\t" + ref + "\t" + "1\n"
+                relevant += query + "\t" + ref + "\t" + "1\t" + str(result) + "\n"
             else:
-                irrelevant += query + "\t" + ref + "\t" + "0\n"
+                irrelevant += query + "\t" + ref + "\t" + "0\t" + str(result) + "\n"
+            counter += 1
         else:
             raise ValueError(f"No results for {result} in {fn}.")
 
@@ -51,24 +58,28 @@ def write_with_truth_results(query, results, fn, truth, folder="./data/Training-
     relevant = ""
     irrelevant = ""
     counter = 0
+    # Do minimal necessary level of processing
+    query = query.replace("\n", "").replace("\t", "")
     # Manually write out relevant ones
     for result in truth:
         counter += 1
         ref = tree.xpath(".//S[@sid='" + result + "']")
-        ref = ref[0].text
-        relevant += query + "\t" + ref + "\t" + "1\n"
+        ref = ref[0].text.replace("\n", "").replace("\t", "")
+        relevant += query + "\t" + ref + "\t" + "1\t" + str(result) + "\n"
     for result in results:
         # Make sure to cancel after a certain number of results has been reached.
-        if counter >= 10:
+        if counter == 10:
             break
+        if counter > 10:
+            raise ValueError("Problem encountered!")
         ref = tree.xpath(".//S[@sid='" + result + "']")
         if ref:
-            ref = ref[0].text
+            ref = ref[0].text.replace("\n", "").replace("\t", "")
             # Formatting has to be relevant first, then irrelevant.
             if result in truth:
                 continue
             else:
-                irrelevant += query + "\t" + ref + "\t" + "0\n"
+                irrelevant += query + "\t" + ref + "\t" + "0\t" + str(result) + "\n"
                 counter += 1
         else:
             raise ValueError(f"No results for {result} in {fn}.")
@@ -163,8 +174,8 @@ def get_clean_text(text: str) -> str:
     # Clean up any left over duplicate spaces
     clean_text = re.sub(r"\s+", " ", clean_text)
 
-    # Replace any left special characters with escaping
-    clean_text = re.sub(r"([\+\-&{2}\|{2}\!\(\)\{\}\[\]\^\"\~\*\?:\\\/])", r"\\\1", clean_text)
+    # Replace any left special characters with escaping, necessary for default query parser
+    # clean_text = re.sub(r"([\+\-&{2}\|{2}\!\(\)\{\}\[\]\^\"\~\*\?:\\\/])", r"\\\1", clean_text)
     return clean_text
 
 
@@ -248,8 +259,9 @@ if __name__ == "__main__":
             # TODO: Only write with new results!!
 
             res = get_top_k_by_weight(results, top_k)
-            write_results(satya_input_query, res, filename, truth, folder)
-            write_with_truth_results(satya_input_query, res, filename, truth, folder)
+            if len(res) >= 10:
+                write_results(satya_input_query, res, filename, truth, folder)
+                write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
