@@ -194,6 +194,8 @@ if __name__ == "__main__":
     exact_tp_random = 0
 
     invalid_queries = 0
+    duplicate_queries = 0
+    duplicate_dict = set()
     # This is the validation set used by the UoM team (winner 2019)
     # valid = ["C00-2123", "C04-1089", "I05-5011", "J96-3004", "N06-2049", "P05-1004", "P05-1053", "P98-1046"]
     # Enable either ScisummNet or regular training data
@@ -207,7 +209,7 @@ if __name__ == "__main__":
 
         citances = get_citances_for_file(filename, list(), folder)
 
-        for i, citance in enumerate(citances):
+        for i, citance in enumerate(citances, start=1):
             results = defaultdict(float)
             all_query_sentences = citance["Citation Text"]
             soup = BeautifulSoup(all_query_sentences, "html.parser")
@@ -218,10 +220,10 @@ if __name__ == "__main__":
             # Add text together from different citation sentences.
             # Results show that a big single query performs better.
             for el in texts:
-                print(el)
+                # print(el)
                 cleaned += get_clean_text(el.text)
                 satya_input_query += el.text
-                print(cleaned+"\n")
+                # print(cleaned+"\n")
 
             # For empty queries, skip results...
             if not cleaned:
@@ -239,7 +241,6 @@ if __name__ == "__main__":
                 results[doc["id"]] += doc["score"]
 
             intersection = get_intersection(res1, res2)
-
 
             # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,)
             #                   # bf="position_boost", defType="edismax")
@@ -260,8 +261,16 @@ if __name__ == "__main__":
 
             res = get_top_k_by_weight(results, top_k)
             if len(res) >= 10:
-                write_results(satya_input_query, res, filename, truth, folder)
-                write_with_truth_results(satya_input_query, res, filename, truth, folder)
+                query = satya_input_query.replace("\n", "").replace("\t", "")
+                if query in duplicate_dict:
+                    duplicate_queries += 1
+                else:
+                    duplicate_dict.add(query)
+                    # Only write if the query sentence hasn't appeared yet.
+                    # This discards rouhgly 3% of the samples, but makes sure we have the exact expected results.
+                    # Especially since sometimes evenithin the same paper, the same reference is used multiple times.
+                    write_results(satya_input_query, res, filename, truth, folder)
+                    write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
@@ -298,3 +307,5 @@ if __name__ == "__main__":
     recall2 = intersect_tp / overall
     print(f"Recall: {recall2:.4f}")
     print(f"F1 overlap: {2 * (precision2 * recall2) / (precision2 + recall2):.4f}")
+
+    print(f"{duplicate_queries} duplicate queries found.")
