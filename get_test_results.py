@@ -5,7 +5,7 @@ import pandas as pd
 import pysolr
 import os
 
-from solr_query_test import get_intersection, get_top_k_by_weight
+from solr_query_test import get_intersection, get_top_k_by_weight, get_clean_text
 
 
 def get_citances_from_csv(filename, citances, folder):
@@ -46,9 +46,16 @@ def write_results(query, results, fn, folder):
 
 
 if __name__ == "__main__":
-    top_k = 10
+    top_k = 4
     folder = "./data/Test-Set-2018/"
     duplicates = 0
+
+    with open("results_intersection_2_fields.tsv", "w") as f:
+        f.write("query\tdoc_id\tlabel\n")
+
+    with open("test_set.tsv", "w") as f:
+        pass
+
     for filename in tqdm(sorted(os.listdir(folder))):
         citances = get_citances_from_csv(filename, list(), folder)
 
@@ -61,10 +68,13 @@ if __name__ == "__main__":
             if row in query_set:
                 print(f"Duplicate detected in file {filename}!\n{row}")
                 duplicates += 1
+                continue
             else:
                 query_set.add(row)
 
-            cleaned = row.replace("\t", "").replace("\n", "")
+            if "\t" in row or "\n" in row:
+                raise ValueError("Found tab or newline")
+            cleaned = get_clean_text(row)
 
             results = defaultdict(float)
             # This is mostly relevant if scores from multiple queries would be combined.
@@ -82,6 +92,14 @@ if __name__ == "__main__":
 
             res = get_top_k_by_weight(results, top_k)
             # Hand over empty set since we don't know the answers.
-            write_results(row, res, filename, folder)
+            # write_results(row, res, filename, folder)
+
+            with open("results_intersection_2_fields.tsv", "a") as f:
+                dummy = str([1] * len(intersection))  # Necessary to merge with Satya's results
+                if intersection:
+                    f.write(row + "\t" + str(intersection) + "\t" + dummy + "\n")
+                # If no "consensus" was reached, return the top-1 result.
+                else:
+                    f.write(row + "\t" + str([res[0]]) + "\t" + '[1]' + "\n")
 
     print(f"{duplicates} duplicates detected.")
