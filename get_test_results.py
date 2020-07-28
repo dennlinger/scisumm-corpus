@@ -46,7 +46,7 @@ def write_results(query, results, fn, folder):
 
 
 if __name__ == "__main__":
-    top_k = 4
+    top_k = 10
     folder = "./data/Test-Set-2018/"
     duplicates = 0
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
             res = get_top_k_by_weight(results, top_k)
             # Hand over empty set since we don't know the answers.
-            # write_results(row, res, filename, folder)
+            write_results(row, res, filename, folder)
 
             with open("results_intersection_2_fields.tsv", "a") as f:
                 dummy = str([1] * len(intersection))  # Necessary to merge with Satya's results
