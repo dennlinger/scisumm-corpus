@@ -6,11 +6,14 @@ import os
 
 
 if __name__ == "__main__":
-    run_name = "intersection_2_field"
-    result_data = "./results_intersection_2_fields.tsv"
+    # run_name = "intersection_2_field"
+    # result_data = "./results_intersection_2_fields.tsv"
 
     # run_name = "negative_only_2_field"
     # result_data = "./doc_ids_search_only.csv"
+
+    run_name = "with_truth_2_field"
+    result_data = "./doc_ids_with_truth.csv"
 
     test_path = "./data/Test-Set-2018"
 
@@ -38,10 +41,10 @@ if __name__ == "__main__":
         for i, row in temp_result_data.iterrows():
             all_sids = eval(result_dict[row["Citation Text Clean"]])
             # Map format to expected output
-            temp_result_data.at[i, "Reference Offset"] = ",".join(["'" + el + "'" for el in all_sids])
+            temp_result_data.at[i, "Reference Offset"] = ",".join(["'" + str(el) + "'" for el in all_sids])
             ref_text = ""  # Multiple references are just appended one after another.
             for sid in all_sids:
-                sourceline = tree.xpath(".//S[@sid='" + sid + "']")[0].sourceline
+                sourceline = tree.xpath(".//S[@sid='" + str(sid) + "']")[0].sourceline
                 line = linecache.getline(xml_file, sourceline)
                 ref_text += line.strip(" \t\n")
 
