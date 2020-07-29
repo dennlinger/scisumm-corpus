@@ -8,6 +8,10 @@ import os
 if __name__ == "__main__":
     run_name = "intersection_2_field"
     result_data = "./results_intersection_2_fields.tsv"
+
+    # run_name = "negative_only_2_field"
+    # result_data = "./doc_ids_search_only.csv"
+
     test_path = "./data/Test-Set-2018"
 
     base_path = os.path.join ("./runs/", run_name, "Task1")
@@ -43,6 +47,6 @@ if __name__ == "__main__":
 
             temp_result_data.at[i, "Reference Text"] = ref_text
 
-        temp_result_data.to_csv(os.path.join(base_path, filename + ".csv"))
+        temp_result_data.to_csv(os.path.join(base_path, filename + ".csv"), index=False)
 
 
