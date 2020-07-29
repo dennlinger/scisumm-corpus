@@ -66,15 +66,15 @@ def get_clean_text(text: str) -> str:
 
 if __name__ == "__main__":
 
-    # folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
+    folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
     # folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
-    folder = "./data/Test-Set-2018/"
+    # folder = "./data/Test-Set-2018/"
     boost_value = 1.5
     threshold = 0.3
 
     # Clean indexes
-    # for filename in tqdm(sorted(os.listdir(folder))):
-    #     subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "delete", "-c", filename])
+    for filename in tqdm(sorted(os.listdir(folder))):
+        subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "delete", "-c", filename])
     # subprocess.call(["/home/dennis/solr-8.5.2/bin/solr", "restart", "-m", "4g"])
     # time.sleep(15)  # Give time to restart, although above runs already until restart time.
 
@@ -141,8 +141,8 @@ if __name__ == "__main__":
                     "position_boost": fraction_boost,
                     "text2": clean_text,
                     "text3": clean_text,
-                    "text4": clean_text,
-                    "text5": clean_text,
+                    # "text4": clean_text,
+                    # "text5": clean_text,
                 })
 
         if empty_sentences / len(sentences) > 0.15:
