@@ -115,6 +115,33 @@ def get_intersection(res1, res2):
     return keys
 
 
+def get_multi_intersection(res1, res2, res3):
+    res = {}
+    intermediate_res1 = {}
+    for doc in res1.docs:
+        intermediate_res1[doc['id']] = doc['score']
+
+    intermediate_res2 = {}
+    for doc in res2.docs:
+        intermediate_res2[doc['id']] = doc['score']
+        # Other voting scenario in 1+2
+        if doc['id'] in intermediate_res1.keys():
+            res[doc['id']] = intermediate_res1[doc['id']] + doc['score']
+
+    for doc in res3.docs:
+        # "Voting" scenarios of 1+3 and 2+3
+        if doc['id'] in intermediate_res1.keys():
+            res[doc['id']] = intermediate_res1[doc['id']] + doc['score']
+        elif doc['id'] in intermediate_res2.keys():
+            res[doc['id']] = intermediate_res2[doc['id']] + doc['score']
+
+
+    keys = get_top_k_by_weight(res, len(res))
+
+    return keys
+
+
+
 def get_clean_text(text: str) -> str:
     """
     Preprocessing for query string.
@@ -240,12 +267,14 @@ if __name__ == "__main__":
             for doc in res2.docs:
                 results[doc["id"]] += doc["score"]
 
-            intersection = get_intersection(res1, res2)
-
-            # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,)
-            #                   # bf="position_boost", defType="edismax")
+            # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,
+            #                   bf="position_boost", defType="edismax")
             # for doc in res3.docs:
             #     results[doc["id"]] += doc["score"]
+
+            intersection = get_intersection(res1, res2)
+            # intersection = get_multi_intersection(res1, res2, res3)
+
             #
             # res4 = solr.search(cleaned, df="text4", fl="id, score", rows=top_k,
             #                   bf="position_boost", defType="edismax")
@@ -269,8 +298,8 @@ if __name__ == "__main__":
                     # Only write if the query sentence hasn't appeared yet.
                     # This discards rouhgly 3% of the samples, but makes sure we have the exact expected results.
                     # Especially since sometimes evenithin the same paper, the same reference is used multiple times.
-                    write_results(satya_input_query, res, filename, truth, folder)
-                    write_with_truth_results(satya_input_query, res, filename, truth, folder)
+                    # write_results(satya_input_query, res, filename, truth, folder)
+                    # write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
