@@ -13,6 +13,7 @@ from sklearn.preprocessing import FunctionTransformer
 import joblib
 from nltk import word_tokenize
 from nltk.stem import WordNetLemmatizer
+from nltk.corpus import stopwords
 
 import convenience
 
@@ -22,7 +23,7 @@ class LemmaTokenizer:
         self.wnl = WordNetLemmatizer()
          
     def __call__(self, doc):
-        return [self.wnl.lemmatize(t) for t in word_tokenize(doc)]
+        return [self.wnl.lemmatize(t) for t in word_tokenize(doc) if t not in stopwords.words('english')]
 
 
 class column_selector():
@@ -58,7 +59,7 @@ class sid_selector():
 
 if __name__ == "__main__":
     training_reference_sentences, training_citance_sentences, training_titles, training_sid, training_multitargets, test_reference_sentences, test_citance_sentences, test_titles, test_sid, test_multitargets = convenience.get_training_and_test_data_multilabel(
-        training_ratio=0.9, shuffle=False, balance_dataset=False, balance_number=200)
+        training_ratio=0.8, shuffle=False, balance_dataset=False, balance_number=200)
 
     training_data = pd.DataFrame([(t1, t2, t3, t4) for t1, t2, t3, t4 in zip(training_reference_sentences, training_citance_sentences, training_sid, training_titles)], columns=["ref_sentences", "cit_sentences", "sid", "section_titles"])
     test_data = pd.DataFrame([(t1, t2, t3, t4) for t1, t2, t3, t4 in zip(test_reference_sentences, test_citance_sentences, test_sid, test_titles)], columns=["ref_sentences", "cit_sentences", "sid", "section_titles"])
@@ -87,32 +88,28 @@ if __name__ == "__main__":
         ])),
         
         ("clf", OneVsRestClassifier(SGDClassifier(loss="perceptron", penalty="elasticnet",
-                                    alpha=1e-3, max_iter=1000, tol=None))),
+                                    alpha=1e-3, max_iter=1000, tol=None, l1_ratio=0.4))),
     ])
 
-    # pipeline.fit(training_data, training_multitargets)
+    pipeline.fit(training_data, training_multitargets)
 
-    # predictions = pipeline.predict(test_data)
+    predictions = pipeline.predict(test_data)
 
-    # print("SGD Multilabel")
-    # print(multilabel_confusion_matrix(test_multitargets, predictions))
-    # print(metrics.classification_report(test_multitargets, predictions, digits=3))
+    print("SGD Multilabel")
+    print(multilabel_confusion_matrix(test_multitargets, predictions))
+    print(metrics.classification_report(test_multitargets, predictions, digits=3))
 
-    # predictions = pipeline.predict(test_data)
+    predictions = pipeline.predict(test_data)
 
-    # print("SGD Multilabel")
-    # print(multilabel_confusion_matrix(test_multitargets, predictions))
-    # print(metrics.classification_report(test_multitargets, predictions, digits=3))
+    print("SGD Multilabel")
+    print(multilabel_confusion_matrix(test_multitargets, predictions))
+    print(metrics.classification_report(test_multitargets, predictions, digits=3))
 
-    # joblib.dump(pipeline, "sgd_multilabel.model")
+    joblib.dump(pipeline, "sgd_multilabel2.model")
 
     # new_model = joblib.load("sgd_multilabel.model")
 
     # predictions = new_model.predict(test_data)
-
-    print("-----")
-    print(test_data.columns)
-    print("-----")
 
     # print("SGD Multilabel")
     # print(multilabel_confusion_matrix(test_multitargets, predictions))

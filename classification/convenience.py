@@ -285,6 +285,21 @@ def get_training_and_test_data_multilabel(training_ratio=0.7, clean_text=False, 
 
     training_size = round(len(annotations) * training_ratio)
 
+    # for annotation in annotations:
+    #     for citance in annotation:
+    #         import string
+    #         facets = list(citance["Discourse Facet"])
+    #         for i in range(len(facets)):
+    #             facets[i] = facets[i].lower().replace(" ", "_")
+
+    #         if "hypothesis_citation" in facets:
+    #             reference_text = get_reference_text(citance, clean_text)
+    #             citation_text, citation_title, cit_relative_sid_pos = get_citation_text(citance, clean_text)
+
+    #             print(reference_text)
+    #             print(citation_text)
+    #             print("-------")
+
     training_annotations = annotations[:training_size]
     test_annotations = annotations[training_size:]
 
@@ -293,6 +308,7 @@ def get_training_and_test_data_multilabel(training_ratio=0.7, clean_text=False, 
     training_titles = []
     training_sid = []
     training_multitargets = []
+
 
     for annotation in training_annotations:
         for citance in annotation:

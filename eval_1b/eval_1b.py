@@ -85,6 +85,11 @@ if __name__ == "__main__":
         # Rename column for citation sentences as expected by the model
         annotation = annotation.rename({"Citation Text Clean": "cit_sentences"}, axis="columns")
 
+        for cit in annotation["cit_sentences"]:
+            if "assum" in cit or "hypothes" in cit:
+                print(cit)
+                print("-----")
+
         # Predict using the model
         predictions = model.predict(annotation)
 
