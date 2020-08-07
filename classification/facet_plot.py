@@ -9,6 +9,11 @@ if __name__ == "__main__":
 
     facet_counts_multi = collections.defaultdict(int)
     facet_counts_single = collections.defaultdict(int)
+
+    for i in range(len(citances)):
+        for j in range(len(citances[i]["Discourse Facet"])):
+            citances[i]["Discourse Facet"][j] = citances[i]["Discourse Facet"][j].replace("_citation", "").strip()
+
     for cit in citances:
         facet_counts_multi[" & ".join(sorted(cit["Discourse Facet"]))] += 1
         for facet in cit["Discourse Facet"]:
@@ -53,7 +58,7 @@ if __name__ == "__main__":
     ax1.legend(wedges, labels_single,
           loc="center left",
           bbox_to_anchor=(0.84, 0, 0.5, 1), 
-          prop={'size': 20},
+          prop={'size': 26},
           )
     # plt.show()
     plt.savefig("./single_facet_counts.png", bbox_inches="tight")

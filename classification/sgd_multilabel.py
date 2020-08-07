@@ -59,7 +59,7 @@ class sid_selector():
 
 if __name__ == "__main__":
     training_reference_sentences, training_citance_sentences, training_titles, training_sid, training_multitargets, test_reference_sentences, test_citance_sentences, test_titles, test_sid, test_multitargets = convenience.get_training_and_test_data_multilabel(
-        training_ratio=0.8, shuffle=False, balance_dataset=False, balance_number=200)
+        training_ratio=0.8, shuffle=True, balance_dataset=False, balance_number=100)
 
     training_data = pd.DataFrame([(t1, t2, t3, t4) for t1, t2, t3, t4 in zip(training_reference_sentences, training_citance_sentences, training_sid, training_titles)], columns=["ref_sentences", "cit_sentences", "sid", "section_titles"])
     test_data = pd.DataFrame([(t1, t2, t3, t4) for t1, t2, t3, t4 in zip(test_reference_sentences, test_citance_sentences, test_sid, test_titles)], columns=["ref_sentences", "cit_sentences", "sid", "section_titles"])
@@ -80,11 +80,11 @@ if __name__ == "__main__":
                 ("tfidf", TfidfTransformer()),
             ])),
 
-            # ("section_title_features",
-            # Pipeline([
-            #     ("selector", sid_selector()),
-            # ])
-            # )
+            ("section_title_features",
+            Pipeline([
+                ("selector", sid_selector()),
+            ])
+            )
         ])),
         
         ("clf", OneVsRestClassifier(SGDClassifier(loss="perceptron", penalty="elasticnet",
@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
     predictions = pipeline.predict(test_data)
 
-    print("SGD Multilabel")
-    print(multilabel_confusion_matrix(test_multitargets, predictions))
-    print(metrics.classification_report(test_multitargets, predictions, digits=3))
+    # print("SGD Multilabel")
+    # print(multilabel_confusion_matrix(test_multitargets, predictions))
+    # print(metrics.classification_report(test_multitargets, predictions, digits=3))
 
     joblib.dump(pipeline, "sgd_multilabel2.model")
 
