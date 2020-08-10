@@ -66,8 +66,8 @@ def get_clean_text(text: str) -> str:
 
 if __name__ == "__main__":
 
-    folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
-    # folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
+    # folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
+    folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
     # folder = "./data/Test-Set-2018/"
     boost_value = 1.5
     threshold = 0.3

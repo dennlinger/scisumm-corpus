@@ -207,7 +207,7 @@ def get_clean_text(text: str) -> str:
 
 
 if __name__ == "__main__":
-    top_k = 5
+    top_k = 10
     tp = 0
     exact_tp = 0
     overall = 0
@@ -226,8 +226,8 @@ if __name__ == "__main__":
     # This is the validation set used by the UoM team (winner 2019)
     # valid = ["C00-2123", "C04-1089", "I05-5011", "J96-3004", "N06-2049", "P05-1004", "P05-1053", "P98-1046"]
     # Enable either ScisummNet or regular training data
-    folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
-    # folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
+    # folder = "./data/Training-Set-2019/Task1/From-Training-Set-2018/"
+    folder = "./data/Training-Set-2019/Task1/From-ScisummNet-2019/"
     # for filename in tqdm(valid):  # Used for the validation runs with the UoM data
     for filename in tqdm(sorted(os.listdir(folder))):
         solr = pysolr.Solr('http://localhost:8983/solr/' + filename + '/', always_commit=True)
@@ -251,6 +251,9 @@ if __name__ == "__main__":
                 cleaned += get_clean_text(el.text)
                 satya_input_query += el.text
                 # print(cleaned+"\n")
+            print(cleaned)
+            print(citance["Reference Text"])
+            print("--------------------------------")
 
             # For empty queries, skip results...
             if not cleaned:
@@ -267,13 +270,13 @@ if __name__ == "__main__":
             for doc in res2.docs:
                 results[doc["id"]] += doc["score"]
 
-            # res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,
-            #                   bf="position_boost", defType="edismax")
-            # for doc in res3.docs:
-            #     results[doc["id"]] += doc["score"]
+            res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,
+                              bf="position_boost", defType="edismax")
+            for doc in res3.docs:
+                results[doc["id"]] += doc["score"]
 
-            intersection = get_intersection(res1, res2)
-            # intersection = get_multi_intersection(res1, res2, res3)
+            # intersection = get_intersection(res1, res2)
+            intersection = get_multi_intersection(res1, res2, res3)
 
             #
             # res4 = solr.search(cleaned, df="text4", fl="id, score", rows=top_k,
@@ -286,7 +289,6 @@ if __name__ == "__main__":
             # for doc in res5.docs:
             #     results[doc["id"]] += doc["score"]
 
-            # TODO: Only write with new results!!
 
             res = get_top_k_by_weight(results, top_k)
             if len(res) >= 10:
@@ -295,11 +297,12 @@ if __name__ == "__main__":
                     duplicate_queries += 1
                 else:
                     duplicate_dict.add(query)
+                    # TODO: Only write with new results!!
                     # Only write if the query sentence hasn't appeared yet.
                     # This discards rouhgly 3% of the samples, but makes sure we have the exact expected results.
                     # Especially since sometimes evenithin the same paper, the same reference is used multiple times.
-                    # write_results(satya_input_query, res, filename, truth, folder)
-                    # write_with_truth_results(satya_input_query, res, filename, truth, folder)
+                    write_results(satya_input_query, res, filename, truth, folder)
+                    write_with_truth_results(satya_input_query, res, filename, truth, folder)
 
             # Total number of samples is equal to annotations in truth.
             overall += len(truth)
