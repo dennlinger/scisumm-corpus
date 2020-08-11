@@ -5,7 +5,7 @@ import pandas as pd
 import pysolr
 import os
 
-from solr_query_test import get_intersection, get_top_k_by_weight, get_clean_text
+from solr_query_test import get_intersection, get_top_k_by_weight, get_clean_text, get_multi_intersection
 
 
 def get_citances_from_csv(filename, citances, folder):
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     folder = "./data/Test-Set-2018/"
     duplicates = 0
 
-    with open("results_intersection_2_fields.tsv", "w") as f:
+    with open("results_intersection_3_fields.tsv", "w") as f:
         f.write("query\tdoc_id\tlabel\n")
 
     with open("test_set.tsv", "w") as f:
@@ -87,14 +87,19 @@ if __name__ == "__main__":
                                bf="position_boost", defType="edismax")
             for doc in res2.docs:
                 results[doc["id"]] += doc["score"]
+            res3 = solr.search(cleaned, df="text3", fl="id, score", rows=top_k,
+                               bf="position_boost", defType="edismax")
+            for doc in res3.docs:
+                results[doc["id"]] += doc["score"]
 
-            intersection = get_intersection(res1, res2)
+            # intersection = get_intersection(res1, res2)
+            intersection = get_multi_intersection(res1, res2, res3)
 
             res = get_top_k_by_weight(results, top_k)
             # Hand over empty set since we don't know the answers.
             write_results(row, res, filename, folder)
 
-            with open("results_intersection_2_fields.tsv", "a") as f:
+            with open("results_intersection_3_fields.tsv", "a") as f:
                 dummy = str([1] * len(intersection))  # Necessary to merge with Satya's results
                 if intersection:
                     f.write(row + "\t" + str(intersection) + "\t" + dummy + "\n")
