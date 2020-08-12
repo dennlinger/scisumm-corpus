@@ -6,14 +6,23 @@ import os
 
 
 if __name__ == "__main__":
+    # run_name = "intersection_3_field"
+    # result_data = "./results_intersection_3_fields.tsv"
+    #
     # run_name = "intersection_2_field"
     # result_data = "./results_intersection_2_fields.tsv"
 
     # run_name = "negative_only_2_field"
-    # result_data = "./doc_ids_search_only.csv"
+    # result_data = "./doc_ids_search_only_3epochs.csv"
 
-    run_name = "with_truth_2_field"
-    result_data = "./doc_ids_with_truth.csv"
+    # run_name = "negative_only_3_field"
+    # result_data = "./doc_ids_search_only3_3epochs.csv"
+
+    # run_name = "with_truth_2_field"
+    # result_data = "./doc_ids_with_truth_3epochs.csv"
+
+    run_name = "with_truth_3_field"
+    result_data = "./doc_ids_with_truth3_3epochs.csv"
 
     test_path = "./data/Test-Set-2018"
 
