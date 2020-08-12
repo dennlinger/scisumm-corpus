@@ -59,8 +59,11 @@ if __name__ == "__main__":
 
     # Test annotations
     # base_path = "../data/Test-Set-2018"
-    base_path = "../runs/intersection_2_field/Task1"
-    write_path = "../runs/intersection_2_field/Task1b"
+    # base_path = "../runs/intersection_3_field/Task1"
+    # base_path = "../runs/negative_only_3_field/Task1"
+    base_path = "../runs/with_truth_3_field/Task1"
+    # write_path = "../runs/negative_only_3_field/Task1"
+    write_path = base_path
     annotations = read_annotation_files(base_path, sub_folder_structure=False)
 
     # pre-trained model
@@ -94,6 +97,9 @@ if __name__ == "__main__":
             for j in range(len(pred)):
                 if pred[j]:
                     categories.append(id2cat[j])
+            # Fallback to method citation prediction if nothing was predicted.
+            if not categories:
+                categories = ["'method_citation'"]
             discourse_facets.append("[" + ",".join(categories) + "]")
 
         annotation["Discourse Facet"] = discourse_facets
